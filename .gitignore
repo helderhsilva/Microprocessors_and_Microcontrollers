@@ -1,0 +1,22 @@
+#Arquivos Executaveis
+*.exe
+
+#Vídeos
+*.mp4
+*.wmv
+
+#Imagens
+*.jpeg
+
+#Pastas
+imagens
+Project Backups
+build
+debug
+nbproject
+Makefile
+
+#Extras
+*.workspace
+*.hex
+*.map
