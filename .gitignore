@@ -20,3 +20,16 @@ Makefile
 *.workspace
 *.hex
 *.map
+*.hxl
+*.lst
+*.elf
+*.cmf
+*.i
+*.d
+*.p1
+*.xml
+*.mum
+*.o
+*.rlf
+*.sdb
+*.sym
