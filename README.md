@@ -10,9 +10,9 @@ Repository for the activities of the discipline of Microprocessors and Microcont
 
 ## Works
 
-- [Exercícios - Asembly + Proteus]()
-- [Exercícios - C + Proteus]()
-- [Trabalho Final]()
+- [Exercícios - Asembly + Proteus](https://github.com/helderhsilva/Microprocessors_and_Microcontrollers/tree/main/Unidade_3/Trabalhos)
+- [Exercícios - C + Proteus](https://github.com/helderhsilva/Microprocessors_and_Microcontrollers/tree/main/Unidade_4/Trabalhos)
+- [Trabalho Final](https://github.com/helderhsilva/Microprocessors_and_Microcontrollers/tree/main/Unidade_5/Trabalhos)
 
 <br>
 
