@@ -4,7 +4,7 @@ Repository for the activities of the discipline of Microprocessors and Microcont
 <br>
 
 ## ⚠️ Some Cares
-*Beware of plagiarism. Put the author fonts.*
+*Beware of plagiarism. Put the author fonts. _NOTE: .rar files referring to unit tests have a password. =}_*
 
 <br>
 
