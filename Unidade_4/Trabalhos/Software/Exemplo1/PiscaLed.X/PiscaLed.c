@@ -1,6 +1,6 @@
 /*
 * UFSC- Universidade Federal de Santa Catarina
-* Projeto: Exercício 5 - Carro de Transporte
+* Projeto: Exempplo 1 - Pisca Led em C
 * Autor: Helder Henrique da Silva - 20250326
 * Create File: 01/02/2022
 * Funcionalidade:
@@ -21,16 +21,21 @@ void primeiraRotina()
     PORTBbits.RB6 = 1;
     PORTBbits.RB7 = 1;
     __delay_ms(300);
+    
     PORTBbits.RB2 = 1;
     PORTBbits.RB5 = 1;
     __delay_ms(300);
+    
     PORTBbits.RB4 = 1;
     __delay_ms(300);
+    
     PORTBbits.RB4 = 0;
     __delay_ms(300);
+    
     PORTBbits.RB2 = 0;
     PORTBbits.RB5 = 0;
     __delay_ms(300);
+    
     PORTBbits.RB1 = 0;
     PORTBbits.RB3 = 0;
     PORTBbits.RB6 = 0;
@@ -49,6 +54,7 @@ void segundaRotina()
     PORTBbits.RB6 = 1;
     PORTBbits.RB7 = 1;
     __delay_ms(900);
+    
     PORTBbits.RB1 = 0;
     PORTBbits.RB2 = 0;
     PORTBbits.RB3 = 0;
@@ -62,7 +68,7 @@ void segundaRotina()
 
 void main(void) {
     
-    TRISB = 0;
+    TRISB = 0;                                  // Port B como saída
     
     while (1)
     {
