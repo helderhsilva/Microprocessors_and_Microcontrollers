@@ -34,27 +34,27 @@ void inicializar()
 __bit start;
 __bit SN;
 
-// Rotina para incrementar o valor
+// Rotina para verificar se o botão de ligar foi acionado
 int verifyStart()
 {
     start = PORTBbits.RB0;
     
-    if (start == 0)
+    if (start == 0)                             // Botão liga foi pressionado?
     {
-        return 1;
+        return 1;                               // Sim - Retorna verdadeiro
     }
-    return 0;
+    return 0;                                   // Não - Retorna falso
 };
 
 int verifySN()
 {
     SN = PORTBbits.RB7;
     
-    if (SN == 0)
+    if (SN == 0)                                // SN ativou?
     {
-        return 1;
+        return 1;                               // Sim - Retorna verdadeiro
     }
-    return 0;
+    return 0;                                   // Não - Retorna falso
 };
 
 #endif	/* HEADER_H */
