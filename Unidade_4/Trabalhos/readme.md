@@ -6,7 +6,7 @@ Exercícios com timers:
 > 4Mhz/4 = 1Mhz
 > p = 1us
 > Pré-escala T1_DIV_BY_2
-> 1Mhz/2 = 0,5khz -> p = 2us
+> 1Mhz/2 = 500khz -> p = 2us
 > Um pulso e uma contagem a cada 2us
 > Se quiser 100ms de tempo, dividi por 2us = 50000 pulsos de 2us
 > Basta o timer 1 contar 50000 pulsos.
