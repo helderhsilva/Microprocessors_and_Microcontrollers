@@ -12,12 +12,20 @@
 void main(void)
 {
     inicializar();                                                      // Inicialização Full
-    
+  
     while (1)
     {
-        pegaValorEmCentimetro();                                            // Mostra a situação no LCD
         //CLRWDT();
-        //T1CONbits.TMR1ON = 1;                                           //Liga o timer1
+        while (recarga == 1 && TAMPA_SUPERIOR == 1)
+        {            
+            if (S_TAMPA_SUPERIOR == 1)
+            {
+                fechaTampaSuperior();
+                recarga = 0;
+            }
+        }
+        
+        verificaSensorSuperior();        
         verificaSensorInferior();
         
         if (TAMPA_INFERIOR == 0 && S_VASILHA == 1)                      // Se o botão da taampa inferior for pressionado e a vasilha não estiver cheia
