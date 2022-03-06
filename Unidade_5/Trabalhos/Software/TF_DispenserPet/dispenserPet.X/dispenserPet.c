@@ -11,45 +11,34 @@
 
 void main(void)
 {
-    inicializar();
-    
-    unsigned int a;
-    float f = 1.414;
-    char buffer[20];
+    inicializar();                                                      // Inicialização Full
     
     while (1)
     {
-        Lcd_Clear();                    //limpa LCD
-    Lcd_Set_Cursor(1,1);            //P?e curso linha 1 coluna 1
-    
-    Lcd_Write_String("OLA MUNDO");  //escreve string
-    __delay_ms(1000);
-    
-    Lcd_Set_Cursor(2,1);             //linha 2 coluna 1
-    Lcd_Write_String("MUNDO DOIDO"); //escreve string]
-    __delay_ms(2000);
-    
-    C1 = 1;
-    C2 = 0;
-    C3 = 0;
-    C4 = 1;
-    
-    C5 = 1;
-    C6 = 0;
-    C7 = 0;
-    C8 = 1;
-    __delay_ms(2000);
+        pegaValorEmCentimetro();                                            // Mostra a situação no LCD
+        //CLRWDT();
+        //T1CONbits.TMR1ON = 1;                                           //Liga o timer1
+        verificaSensorInferior();
         
-    C1 = 0;
-    C2 = 1;
-    C3 = 1;
-    C4 = 0;
-    
-    C5 = 0;
-    C6 = 1;
-    C7 = 1;
-    C8 = 0;
-    __delay_ms(2000);
-    
+        if (TAMPA_INFERIOR == 0 && S_VASILHA == 1)                      // Se o botão da taampa inferior for pressionado e a vasilha não estiver cheia
+        {
+            if (S_TAMPA_INFERIOR == 0)                                  // Se o sensor da tampa inferior fechada estiver ativado
+            {
+                abreTampaInferior();                                    // Abre a tampa inferior do dispenser em 45°
+            }
+        }
+
+        if (S_VASILHA == 0)                                             // Se o sensor de nível da vasilha indicar que ela está cheia
+        { 
+            if (S_TAMPA_INFERIOR == 1)                                  // Se o sensor da tampa inferior fechada estiver desativado
+            {
+                fechaTampaInferior();                                   // fecha a tampa inferior do dispenser em 45°
+            }
+        }
+
+        /*while (INICIAR_PROCESSO == 0)                                 // Enquanto a chave de iniciar processo estiver ativa
+        {
+
+        }*/  
     }
 }
