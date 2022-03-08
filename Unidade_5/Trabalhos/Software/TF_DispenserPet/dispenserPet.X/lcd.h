@@ -119,6 +119,5 @@ void Lcd_Write_String(char *a)
 	for(i=0;a[i]!='\0';i++)
 	   Lcd_Write_Char(a[i]);
 }
-
 #endif	/* LCD_H */
 

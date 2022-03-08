@@ -1,0 +1,63 @@
+Dispenser Pet
+
+Qual o problema a ser resolvido?
+R: Alimentação de pets de forma automatizada, dessa forma quando os donos estiverem viajando o pet continuará a ser alimentado.
+
+O que ele vai fazer de forma macro?
+R: Ele vai armazenar a refeição (ração) e vai liberá-la em intervalo de 8 em 8 horas.
+
+Quais as principais funcionalidades do dispenser?
+1. Ele vai ter um botão (switch) para abrir e fechar a tampa superior para colocar a ração. Esse botão pode funcionar a qualquer momento (interrupção);
+2. Ele vai ter um sensor de distância acoplado na sua tampa para verificar se ainda há ração ou não no recipiente (altura e diâmetro consigo calcular o volume);
+3. Ele terá um display lcd que mostrará a mensagem de cheio ou vazio (ele pode mostrar quanto tempo falta para a próxima refeição);
+4. Ele terá um botão de iniciar o proceso, para poder determinar em qual momento o dispenser começará a funcionar;
+5. A vasilha terá um sensor de nível para determinar a quantidade de ração;
+
+Entradas:
+1. Switch da tampa superior
+2. Sensor de nível da vasilha (switch)
+3. Sensor de tampa superior fechada
+4. Sensor de tampa inferior fechada
+5. Botão tampa inferior
+
+Entrada analógica: Sensor de distância
+
+Saídas:
+1. LCD 
+2. Motor de passo para a tampa inferior
+3. Motor de passo para a tampa superior
+4. Leds
+5. Buzzer?
+
+Funcionamento:
+R:
+
+*1. O dispenser, inicialmente, vem vázio e com suas tampas (inferior e superior) fechadas;
+*1.1. O LCD é inicializado e aguarda a contagem do timer 0 e sensor analógico;
+*1.2. O sensor analógico pega a posição em cm em que a ração se encontra no dispenser;
+*1.3. O timer 0 atualiza essa posição e joga para o LCD;
+*
+*2. Em cada tampa há um sensor que indica se a tampa está fechada ou não;
+*2.1. Quando as tampas estão fechadas, um led vermelho é indicado;
+*2.2. Quando as tampas estão abertas, um led verde é indicado;
+*
+*3. Para carregar o dispenser (inicialmente vázio), deve ser acionado a chave da tampa superior (RB0/INT);
+*3.1. Quando acionado a chave, o motor de passo gira +90° e o sensor da tampa superior deve ser desativado (tampa aberta);
+*3.2. Quando a chave volta ao estado inicial, o motor de passo gira -90° e o sensor da tampa superior é ativado (tampa fechada);
+*
+*4. Uma vez que o dispenser se encontra cheio (ou com ração acima de um certo nível), a vasilha é enchida pela primeira vez;
+*4.1. É verificado se é o primeiro enchimento após carregar o dispenser;
+*4.2. É verificado se a vasilha está vazia e se o dispenser tem ração;
+*4.3. Verifica se a tampa inferior está fechada;
+*4.4. Abre a tampa inferior, o motor de passo gira +45° e o sensor da tampa inferior deve ser desativado (tampa aberta);
+*
+*5. Se o sensor da vasilha indicar que ela está cheia;
+*5.1. Verifica se a tampa inferior está aberta;
+*5.2. Fecha a tampa inferior, o motor de passo gira -45° e o sensor da tampa inferior é ativado (tampa fechada);
+*
+*6. O timer 1 é iniciado ao ligar o microcontrolador (funcionamento de 8 em 8 horas para o comercial);
+*6.1. A cada 20 segundos ele verifica se a vasilha está vázia e se tem ração no dispenser;
+*6.2. Abre a tampa inferior, o motor de passo gira +45° e o sensor da tampa inferior deve ser desativado (tampa aberta);
+*
+*7. Se o dispenser estiver ficando vázio e não for feita a recarga;
+*7.1. O processo é bloqueado até que o dispenser seja carregado.

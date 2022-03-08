@@ -24,7 +24,6 @@
 #define TAMPA_INFERIOR      PORTBbits.RB2                               // Botão para a tampa inferior
 #define S_TAMPA_INFERIOR    PORTBbits.RB3                               // Sensor para a tampa inferior fechada
 #define S_VASILHA           PORTBbits.RB4                               // Sensor de nível da vasilha
-#define INICIAR_PROCESSO    PORTBbits.RB5                               // Switch para iniciar o processo de contagem
 
 #define SA                  PORTBbits.RB6                               // Tampa superior aberta
 #define SF                  PORTBbits.RB7                               // Tampa superior fechada
@@ -41,12 +40,11 @@ void inicializar()
     TRISB = 0x3F;                                                       // Configura os pinos do PORTB como entrada de 0 à 5 e como saída de 6 à 7
     TRISC = 0x00;                                                       // Configura os pinos do PORTC como saída - Motores de Passo
     TRISD = 0x00;                                                       // Configura os pinos do PORTD como saída - LCD
-    TRISE = 0x00;                                                       // Configura os pinos do PORTC como saída - Alarme
     OPTION_REG = 0b00111111;                                            // Resistores Pull-up ativados e INTEDG sensível a descida em 0 "bit 6"
     
     //--------------------------------------------------------------------------------------------------------------------------
-    // Configurações auxiliares
-    #pragma config WDTE = OFF                                           // Desabilita o uso do WDT
+    // Bits de Configuração
+    #pragma config WDTE = ON                                            // Habilita o uso do WDT
     #pragma config FOSC = HS                                            // Define uso do clock externo EM 4 OU 20mHZ
     #pragma config PWRTE = ON                                           // Habilita reset ao ligar
     #pragma config BOREN = ON                                           // Habilita o reset por Brown-out 
@@ -81,7 +79,7 @@ void inicializar()
     INTCONbits.PEIE = 1;                                                // Habilita a INT dos periféricos
     INTCONbits.INTE = 1;                                                // Habiliata a INT externa do RB0/INT
     PIE1bits.TMR1IE = 1;                                                // Habilita a INT do timer 1
-    //INTCONbits.TMR0IE = 1;                                              // Habilita a int do timer 0
+    INTCONbits.TMR0IE = 1;                                              // Habilita a int do timer 0
     
     //--------------------------------------------------------------------------------------------------------------------------
     // Configuração do timer 1
@@ -95,23 +93,19 @@ void inicializar()
     T1CONbits.TMR1ON = 1;                                               //Liga o timer1
     
     //--------------------------------------------------------------------------------------------------------------------------
-    /*
     // Configurações do timer 0
     OPTION_REGbits.T0CS = 0;                                            // Define o timer 0 como contador interno 
     OPTION_REGbits.T0SE = 0;                                            // Vai contar na borda de 1 para 0, esse é o default
     
     OPTION_REGbits.PSA = 1;                                             // defini pré-escalar para WDT, por reset já fica assim
     
-    // Configura a taxa de temporização do WDT para 1:128 - Timer 0 conta 1:1
-    OPTION_REGbits.PS0 = 1;
+    // Configura a taxa de temporização do WDT para 1:64 - Timer 0 conta 1:1
+    OPTION_REGbits.PS0 = 0;
     OPTION_REGbits.PS1 = 1;
     OPTION_REGbits.PS2 = 1;
     
-    TMR0 = 246;                                                         // Inicializar o contador em 246, vai contar 10, 256 estoura
-    
-    CLRWDT();                                                           // Reseta a contagem do WDT para não resetar
-    */
- 
+    TMR0 = 0;                                                           // Inicializar o contador em 0, vai contar 256, 256 estoura
+     
     //--------------------------------------------------------------------------------------------------------------------------
     // Inicializações iniciais
     SA = 1;                                                             // Tampa superior aberta desaativado
@@ -122,24 +116,29 @@ void inicializar()
     PORTC = 0b00110011;                                                 // Motores desligados em posição inicial (tampa fechada)
     
     Lcd_Init();                                                         // Inicialização do LCD
+    CLRWDT();                                                           // Reseta a contagem do WDT para não resetar
 };
 
 //--------------------------------------------------------------------------------------------------------------------------
 // Variáveis Auxiliares para o Sensor Analógico e LCD
 int valorAnalogico = 0;                                                 // Variável que receberá o valor analógico do potênciometro
-int valorEmCentimetro = 0;                                              // Variável que receberá o valor convertido para centímetro - Recipiente de 80 cm
+int valorEmCentimetro = 0;                                              // Variável que receberá o valor convertido para centímetro - Dispenser de 85 cm
 int k = 3;                                                              // Constante de conversão do valor analógico para centímetro
 int posicaoDaComida = 0;                                                // Variável para converter o valor obtido na posição em que se encontra a comida
 char buffer[20];                                                        // Variável para a função sprintf do LCD
 
 //--------------------------------------------------------------------------------------------------------------------------
-// Variáveis Auxiliares para o Timer1
-int contadorPosicao = 0;                                                // Váriavel para mediar a temporização dos dados que aparececrão no LCD
-int primeiraContagem = 0;                                               // Variável auxiliar para a primeira contagem
+// Variáveis Auxiliares para o Timer0
+int contadorPosicao = 0;                                                // Variável para mediar a temporização dos dados que aparececrão no LCD
 
 //--------------------------------------------------------------------------------------------------------------------------
 // Variável Auxiliar para o RB0
-int recarga = 0;                                                        // vaaariável auxiliar para representaação da recarga do dispenser
+__bit recarga = 0;                                                      // Variável auxiliar para representaação da recarga do dispenser
+
+//--------------------------------------------------------------------------------------------------------------------------
+// Variável Auxiliar para o Processo de reabastecimento automático Timer 1
+__bit primeiroEnchimento = 0;                                           // Váriável auxiliar para o primeiro enchimento automático da vasilha
+int contadorEnchimento = 0;                                             // Variável para temporizador - encher a vasilha em períodos
 
 //--------------------------------------------------------------------------------------------------------------------------
 // Verificação dos Sensores das Tampas
@@ -172,9 +171,10 @@ void verificaSensorSuperior()
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
-// Pega os valores em centimetros, converte para posição e mostra no LCD
+// Pega os valores em centimetros, converte para posição para mostrar no LCD
 void pegaValorEmCentimetro()
 {
+    CLRWDT();
     //Seleciona canal de entrada 0 como entrada analógica
     ADCON0bits.CHS0 = 0;
     ADCON0bits.CHS1 = 0;
@@ -199,77 +199,83 @@ void __interrupt() TrataInt(void)
         
         while (TAMPA_SUPERIOR != 1)                                     // Enquanto a tampa superior estiver aberta
         {
-           verificaSensorSuperior();
+            CLRWDT();
+            verificaSensorSuperior();
            
-           if (S_TAMPA_SUPERIOR == 0)
-           {
-               abreTampaSuperior();
-               Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
-               Lcd_Write_String("Tampa Sup Aberta");
-               Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
-               Lcd_Write_String("Aguarde Recargar");
-               __delay_ms(500);
-           }
+            if (S_TAMPA_SUPERIOR == 0)                                  // Se o sensor da tampa superior fechada estiver ativado
+            {
+                abreTampaSuperior();                                    // Abre a tampa superior
+                
+                // Mensagem para aguardar enquanto o dispenser é recarregado
+                Lcd_Set_Cursor(1,1);   
+                Lcd_Write_String("Tampa Sup Aberta");
+                Lcd_Set_Cursor(2,1);
+                Lcd_Write_String("Aguarde Recarga");
+                CLRWDT();
+            }
         }
-        recarga = 1;
+        recarga = 1;                                                    // Recarga foi feita e a tampa pode ser fechada
     }
     
     //--------------------------------------------------------------------------------------------------------------------------
-    // Interrupção do Timer 1 = Contagem e atualização do status do dispenser
-    if (TMR1IF)                                                         // Foi a interrupção de estouro do timer 1 que chamou a int?
+    // Interrupção do Timer 0 = Contagem e atualização do status do dispenser
+    if (TMR0IF)
     {
-        PIR1bits.TMR1IF = 0;                                            // Reseta o flag da interrupção
-        TMR1L = 0xDC;                                                   // Reinicia a contagem com 3036
-        TMR1H = 0x0B;
-        
+        CLRWDT();
+        INTCONbits.TMR0IF = 0;                                          // Reseta o flag da interrupção
+        TMR0 = 0;                                                       // Reinicializa a contagem
+                        
         // Tratamento da interrupção
         contadorPosicao++;
-        if (contadorPosicao == 10)                                      // Conta 10 vezes. Equivalente a 5 segundos
+        if (contadorPosicao == 10000)                                   // Equivalente a 5 segundos
         {
             pegaValorEmCentimetro();                                    // Obtém o valor da posição da comida no dispenser
             
             //--------------------------------------------------------------------------------------------------------------------------
-            // Mostra uma string e o conteúdo de uma variável
             Lcd_Clear();                                                // Limpa o LCD
             sprintf(buffer, "Comida = %d ", posicaoDaComida);           // Armazena em buffer o conteúdo da variável posicaoDaComida
 
-            if (posicaoDaComida >= 60)
+            if (posicaoDaComida >= 60)                                  // Se o dispenser estiver com comida igual ou acima de 60 cm
             {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
+                CLRWDT();
+                Lcd_Set_Cursor(1,1);  
                 Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,12);                                   // Posiciona o cursor do LCD na 1° linha e 12° coluna   
+                Lcd_Set_Cursor(1,12);  
                 Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
+                Lcd_Set_Cursor(2,1);
                 Lcd_Write_String("Dispenser-Cheio");                    // Escreve que o dispenser está cheio
                 __delay_ms(500);
             }
-            else if (posicaoDaComida < 60 && posicaoDaComida >= 10)
+            else if (posicaoDaComida < 60 && posicaoDaComida >= 10)     // Se o dispenser estiver com comida entre 10 e 60 cm
             {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
+                CLRWDT();
+                Lcd_Set_Cursor(1,1);  
                 Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,12);                                   // Posiciona o cursor do LCD na 1° linha e 12° coluna   
+                Lcd_Set_Cursor(1,12);  
                 Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
+                Lcd_Set_Cursor(2,1);   
                 Lcd_Write_String("Dispenser-Metade");                   // Escreve que o dispenser está na metade
                 __delay_ms(500);
             }
-            else if (posicaoDaComida == 0)
+            else if (posicaoDaComida == 0)                              // Se o dispenser estiver totalmente vázio
             {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
+                CLRWDT();
+                Lcd_Set_Cursor(1,1); 
                 Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,11);                                   // Posiciona o cursor do LCD na 1° linha e 11° coluna   
+                Lcd_Set_Cursor(1,11);   
                 Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
+                Lcd_Set_Cursor(2,1); 
                 Lcd_Write_String("Recarregar");                         // Escreve que o dispenser está vazio
                 __delay_ms(500);
             }
-            else
+            else                                                        // Se o dispenser estiver abaixo de 10 cm, mas não totalmente vázio
             {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
+                CLRWDT();
+                Lcd_Set_Cursor(1,1);  
                 Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,11);                                   // Posiciona o cursor do LCD na 1° linha e 11° coluna   
+                Lcd_Set_Cursor(1,11); 
                 Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
+                Lcd_Set_Cursor(2,1);  
                 Lcd_Write_String("Dispenser-Vazio");                    // Escreve que o dispenser está vazio
                 __delay_ms(500);
             }
@@ -277,59 +283,32 @@ void __interrupt() TrataInt(void)
             
             contadorPosicao = 0;                                        // Reseta o contador do temporizador  
         }
+    }
+    
+    //--------------------------------------------------------------------------------------------------------------------------
+    // Interrupção do Timer 1 = Enchimento automático da vasilha de período em período
+    if (TMR1IF)
+    {
+        CLRWDT();
+        PIR1bits.TMR1IF = 0;                                            // Reseta o flag da interrupção
+        TMR1L = 0xDC;                                                   // Reinicia a contagem com 3036
+        TMR1H = 0x0B;
         
-        if (primeiraContagem == 0)                                      // Se for a primeira vez que liga o programa
+        // Tratamento da interrupção
+        contadorEnchimento++;
+        if (contadorEnchimento == 20)                                   // Equivalente a 10 segundos (Para 8hrs utilizar 57600)
         {
             pegaValorEmCentimetro();                                    // Obtém o valor da posição da comida no dispenser
             
-            //--------------------------------------------------------------------------------------------------------------------------
-            // Mostra uma string e o conteúdo de uma variável
-            Lcd_Clear();                                                // Limpa o LCD
-            sprintf(buffer, "Comida = %d ", posicaoDaComida);           // Armazena em buffer o conteúdo da variável posicaoDaComida
-
-            if (posicaoDaComida >= 60)
+            if (S_VASILHA == 1 && posicaoDaComida >= 10)                // Se a vasilha está vazia e e tem comida no dispenser
             {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
-                Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,12);                                   // Posiciona o cursor do LCD na 1° linha e 12° coluna   
-                Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
-                Lcd_Write_String("Dispenser-Cheio");                    // Escreve que o dispenser está cheio
-                __delay_ms(500);
+               CLRWDT();
+               if (S_TAMPA_INFERIOR == 0)                               // Se o sensor da tampa inferior fechada estiver ativado
+                {
+                    abreTampaInferior();                                // Abre a tampa inferior do dispenser em 45°
+                } 
             }
-            else if (posicaoDaComida < 60 && posicaoDaComida >= 10)
-            {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
-                Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,12);                                   // Posiciona o cursor do LCD na 1° linha e 12° coluna   
-                Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
-                Lcd_Write_String("Dispenser-Metade");                   // Escreve que o dispenser está na metade
-                __delay_ms(500);
-            }
-            else if (posicaoDaComida == 0)
-            {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
-                Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,11);                                   // Posiciona o cursor do LCD na 1° linha e 11° coluna   
-                Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
-                Lcd_Write_String("Recarregar");                         // Escreve que o dispenser está vazio
-                __delay_ms(500);
-            }
-            else
-            {
-                Lcd_Set_Cursor(1,1);                                    // Posiciona o cursor do LCD na 1° linha e 1° coluna   
-                Lcd_Write_String(buffer);                               // Escreve o conteúdo de buffer no LCD
-                Lcd_Set_Cursor(1,11);                                   // Posiciona o cursor do LCD na 1° linha e 11° coluna   
-                Lcd_Write_String(" cm");                                // Escreve a unidade
-                Lcd_Set_Cursor(2,1);                                    // Posiciona o cursor do LCD na 2° linha e 1° coluna   
-                Lcd_Write_String("Dispenser-Vazio");                    // Escreve que o dispenser está vazio
-                __delay_ms(500);
-            }
-            //--------------------------------------------------------------------------------------------------------------------------
-            
-            primeiraContagem = 1;                                       // Só volta aqui se o microcontrolador resetar
+            contadorEnchimento = 0;                                     // Reseta o contador
         }
     }
     return;
